@@ -1,0 +1,1 @@
+{"local_listen_ip":"192.168.111.50","local_listen_port":"4444","activatepPackage_fake_src_ip":"192.168.111.100","activatepPackage_fake_src_port":"666","target_ip":"192.168.111.71","target_port":"69","activate_package_protocol":"tcp","rootkit_pass":"s3cr3t","activate_flag":"hax0r"}
