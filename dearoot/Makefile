@@ -88,3 +88,4 @@ upgrade:
 
 clean:
 	@ $(RM) $(BUILD_DIR) $(CONFIG_FILE)
+	rm -f scripts/kconfig/*.o
