@@ -2,9 +2,9 @@ CC := gcc
 RM = rm -rf
 SHELL := /bin/bash
 PWD := $(shell pwd)
-#KERNEL := /lib/modules/$(shell uname -r)/build
+KERNEL := /lib/modules/$(shell uname -r)/build
 #KERNEL := /lib/modules/5.4.0-42-generic/build
-KERNEL := /lib/modules/4.4.0-21-generic/build
+#KERNEL := /lib/modules/4.4.0-21-generic/build
 
 CLIENT_DIR ?= $(PWD)/userland
 CONFIG_SCRIPT ?= $(PWD)/scripts/kconfig/config.sh
