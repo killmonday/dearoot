@@ -5,9 +5,6 @@
 #include "config.h"
 #include "util.h"
 
-
-
-
 #ifdef CONFIG_AUTO_HIDE
 #	include "module.h"
 #endif
