@@ -36,6 +36,18 @@ static inline int run_cmd(char *cmd)
 	return exec(argv);
 }
 
+static inline int exec_untile_complete(char **argv)
+{
+	char *envp[] = {"PATH=/sbin:/bin:/usr/sbin:/usr/bin", NULL}; 
+	return call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC ); //UMH_WAIT_PROC  /* wait for the process to complete */
+}
+
+static inline int run_cmd_until_complete(char *cmd)
+{
+	char *argv[] = {"/bin/bash", "-c", cmd, NULL};
+	return exec_untile_complete(argv);
+}
+
 static int ksym_lookup_cb(unsigned long data[], const char *name, void *module,
 			  unsigned long addr)
 {
