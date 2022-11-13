@@ -416,7 +416,7 @@ static ssize_t khook_ksys_write( unsigned  int fd,  const char __user *buf,  siz
 			goto out;
 		}
 	}
-
+	kfree(tmp);
 	return KHOOK_ORIGIN(ksys_write, fd, buf, nbytes);
 
 out:
@@ -460,7 +460,7 @@ static ssize_t khook_sys_write( unsigned  int fd,  const char __user *buf,  size
 			goto out;
 		}
 	}
-
+	kfree(tmp);
 	return KHOOK_ORIGIN(sys_write, fd, buf, nbytes);
 
 out:
